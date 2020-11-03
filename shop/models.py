@@ -33,18 +33,19 @@ class Image(models.Model):
 class Address(models.Model):
     address = models.CharField(max_length=150)
     phone = models.CharField(max_length=15)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
 
 
 class Order(models.Model):
-    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     datetime = models.DateTimeField(auto_now=True)
     total = models.DecimalField(max_digits=20, decimal_places=2)
     is_paid = models.BooleanField(default=False)
+    # change it to a foreign key
     address = models.CharField(max_length=150)
 
 
 class OrderItem(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.DO_NOTHING, related_name="product")
+    product = models.ForeignKey(Product, on_delete=models.DO_NOTHING, related_name="items")
     quantity = models.PositiveSmallIntegerField()
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
