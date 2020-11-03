@@ -28,3 +28,23 @@ class Image(models.Model):
 
     def __str__(self):
         return self.product.name
+
+
+class Address(models.Model):
+    address = models.CharField(max_length=150)
+    phone = models.CharField(max_length=15)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+
+class Order(models.Model):
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
+    datetime = models.DateTimeField(auto_now=True)
+    total = models.DecimalField(max_digits=20, decimal_places=2)
+    is_paid = models.BooleanField(default=False)
+    address = models.CharField(max_length=150)
+
+
+class OrderItem(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.DO_NOTHING, related_name="product")
+    quantity = models.PositiveSmallIntegerField()
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
