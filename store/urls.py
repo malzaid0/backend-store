@@ -16,8 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from shop import views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("products/", views.ProductsList.as_view(), name="products")
+    path("products/", views.ProductsList.as_view(), name="products"),
+
+    path('login/', TokenObtainPairView.as_view(), name="login"),
+    path('token/refresh/', TokenRefreshView.as_view(), name="token-refresh"),
+    path('register/', views.Register.as_view(), name="register"),
 ]
