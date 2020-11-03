@@ -16,6 +16,7 @@ class Product(models.Model):
     inventory = models.PositiveSmallIntegerField()
     date_added = models.DateField(auto_now_add=True)
     description = models.TextField(null=True, blank=True)
+    main_image = models.URLField()
 
     def __str__(self):
         return f"{self.name} - {self.category.name} - {self.price} - {self.inventory}"
