@@ -12,7 +12,7 @@ class Category(models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=50)
     price = models.DecimalField(decimal_places=2, max_digits=10)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
     inventory = models.PositiveSmallIntegerField()
     date_added = models.DateField(auto_now_add=True)
     description = models.TextField(null=True, blank=True)
@@ -24,7 +24,7 @@ class Product(models.Model):
 
 class Image(models.Model):
     img = models.URLField()
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
 
     def __str__(self):
         return self.product.name
