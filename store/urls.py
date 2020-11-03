@@ -22,6 +22,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("products/", views.ProductsList.as_view(), name="products"),
 
+    path('<int:user_id>/cart/', views.UserCart.as_view(), name="cart"),
+
     path('login/', TokenObtainPairView.as_view(), name="login"),
     path('token/refresh/', TokenRefreshView.as_view(), name="token-refresh"),
     path('register/', views.Register.as_view(), name="register"),
