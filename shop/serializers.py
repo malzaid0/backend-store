@@ -44,19 +44,20 @@ class ProductsListSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ["id", "name"]
+        fields = ["id", "name", "price", "main_image"]
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product = serializers.SerializerMethodField()
+    # product = serializers.SerializerMethodField()
+    product = ProductSerializer()
 
     class Meta:
         model = OrderItem
         fields = ["id", "quantity", "product"]
 
-    def get_product(self, obj):
-        item = Product.objects.get(id=obj.product.id)
-        return ProductSerializer(item).data
+    # def get_product(self, obj):
+    #     item = Product.objects.get(id=obj.product.id)
+    #     return ProductSerializer(item).data
 
 
 class CartSerializer(serializers.ModelSerializer):

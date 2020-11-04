@@ -1,5 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import Category, Product, Image, Order, OrderItem
 from .serializers import ProductsListSerializer, RegisterSerializer, CartSerializer, CreateOrderItemSerializer
 
@@ -14,49 +17,57 @@ class Register(CreateAPIView):
 
 
 class UserCart(RetrieveAPIView):
-    queryset = Order.objects.filter(is_paid=False)
-    lookup_field = "buyer_id"
-    lookup_url_kwarg = "user_id"
+    queryset = Order.objects.all()
     serializer_class = CartSerializer
 
+    def get_object(self):
+        cart, created = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+        return cart
 
-class AddItem(CreateAPIView):
-    queryset = Order.objects.all()
+
+class AddItem(APIView):
     serializer_class = CreateOrderItemSerializer
-    lookup_field = "buyer_id"
-    lookup_url_kwarg = "user_id"
 
-    def perform_create(self, serializer):
-        print("kwargs", self.kwargs["user_id"])
-        user = User.objects.get(id=int(self.kwargs["user_id"]))
-        print("user", user)
-        cart = user.orders.filter(is_paid=False).first()
-        print("cart", cart)
-        # cart = self.request.user.orders.filter(is_paid=False)
-        if cart.exists():
-            exists = False
-            print("cart items", cart.items.all())
-            for item in cart.items.all():
-                print(item.product.id)
-                if item.product.id == int(self.request.data["product"]):
-                    exists = True
-                    print("Exists", item)
-                    item.quantity += int(self.request.data["quantity"])
-                    item.save()
-            if not exists:
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            valid_data = serializer.data
+            cart, created = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+            if created:
                 new_item = {
-                    "product": Product.objects.get(id=int(self.request.data["product"])),
-                    "quantity": self.request.data["quantity"],
+                    "product": Product.objects.get(id=valid_data["product"]),
+                    "quantity": valid_data["quantity"],
                     "order": cart
                 }
-                serializer.save(**new_item)
-        else:
-            # new_order = Order.objects.create(buyer=self.request.user)
-            new_order = Order.objects.create(buyer=user)
-            print("new order", new_order)
-            new_item = {
-                "product": Product.objects.get(id=self.request.data["product"]),
-                "quantity": self.request.data["quantity"],
-                "order": new_order
-            }
-            serializer.save(**new_item)
+                new_order_item = OrderItem.objects.create(**new_item)
+                return Response({
+                    "product": new_order_item.product.name,
+                    "quantity": valid_data["quantity"],
+                    "order": cart.buyer.username
+                }, status=HTTP_200_OK)
+
+            else:
+                for item in cart.items.all():
+                    if item.product.id == int(valid_data["product"]):
+                        item.quantity += int(valid_data["quantity"])
+                        item.save()
+                        return Response({
+                            "product": item.product.name,
+                            "quantity": item.quantity,
+                            "order": cart.buyer.username
+                        }, status=HTTP_200_OK)
+
+                new_item = {
+                    "product": Product.objects.get(id=int(valid_data["product"])),
+                    "quantity": valid_data["quantity"],
+                    "order": cart
+                }
+                new_order_item = OrderItem.objects.create(**new_item)
+                return Response({
+                    "product": new_order_item.product.name,
+                    "quantity": valid_data["quantity"],
+                    "order": cart.buyer.username
+                }, status=HTTP_200_OK)
+
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
