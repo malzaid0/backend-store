@@ -33,9 +33,8 @@ class AddItem(CreateAPIView):
         cart = user.orders.filter(is_paid=False).first()
         print("cart", cart)
         # cart = self.request.user.orders.filter(is_paid=False)
-        if cart:
+        if cart.exists():
             exists = False
-            # items = OrderItem.objects.filter(order=cart)
             print("cart items", cart.items.all())
             for item in cart.items.all():
                 print(item.product.id)
