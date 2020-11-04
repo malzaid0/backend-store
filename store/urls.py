@@ -23,6 +23,7 @@ urlpatterns = [
     path("products/", views.ProductsList.as_view(), name="products"),
 
     path('<int:user_id>/cart/', views.UserCart.as_view(), name="cart"),
+    path('<int:user_id>/cart/add/', views.AddItem.as_view(), name="add-item"),
 
     path('login/', TokenObtainPairView.as_view(), name="login"),
     path('token/refresh/', TokenRefreshView.as_view(), name="token-refresh"),

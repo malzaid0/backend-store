@@ -56,7 +56,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     def get_product(self, obj):
         item = Product.objects.get(id=obj.product.id)
-        print("I AM HERE",item)
         return ProductSerializer(item).data
 
 
@@ -66,3 +65,9 @@ class CartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["id", "buyer", "items"]
+
+
+class CreateOrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ["product", "quantity"]
