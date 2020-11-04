@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
@@ -53,9 +53,14 @@ class AddItem(APIView):
                         item.quantity += int(valid_data["quantity"])
                         item.save()
                         return Response({
-                            "product": item.product.name,
+                            "product": {
+                                "id": item.product.id,
+                                "name": item.product.name,
+                                "price": item.product.price,
+                                "main_image": item.product.main_image
+                            },
                             "quantity": item.quantity,
-                            "order": cart.buyer.username
+                            "id": item.id,
                         }, status=HTTP_200_OK)
 
                 new_item = {
@@ -71,3 +76,9 @@ class AddItem(APIView):
                 }, status=HTTP_200_OK)
 
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class DeleteOrderItem(DestroyAPIView):
+    queryset = OrderItem.objects.all()
+    lookup_field = "id"
+    lookup_url_kwarg = "order_item_id"

@@ -22,6 +22,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("products/", views.ProductsList.as_view(), name="products"),
 
+    path("order-items/<int:order_item_id>/", views.DeleteOrderItem.as_view(), name="del-order-item"),
+
     path('cart/', views.UserCart.as_view(), name="cart"),
     path('cart/add/', views.AddItem.as_view(), name="add-item"),
 
