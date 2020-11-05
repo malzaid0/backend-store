@@ -26,6 +26,7 @@ urlpatterns = [
 
     path('cart/', views.UserCart.as_view(), name="cart"),
     path('cart/add/', views.AddItem.as_view(), name="add-item"),
+    path('checkout/', views.Checkout.as_view(), name="checkout"),
 
     path('login/', TokenObtainPairView.as_view(), name="login"),
     path('token/refresh/', TokenRefreshView.as_view(), name="token-refresh"),

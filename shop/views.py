@@ -1,10 +1,10 @@
 from django.contrib.auth.models import User
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView, RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
-from .models import Category, Product, Image, Order, OrderItem
-from .serializers import ProductsListSerializer, RegisterSerializer, CartSerializer, CreateOrderItemSerializer
+from .models import Category, Product, Image, Order, OrderItem, Address
+from .serializers import ProductsListSerializer, RegisterSerializer, CartSerializer, CreateOrderItemSerializer, CheckoutSerializer
 
 
 class ProductsList(ListAPIView):
@@ -82,3 +82,24 @@ class DeleteOrderItem(DestroyAPIView):
     queryset = OrderItem.objects.all()
     lookup_field = "id"
     lookup_url_kwarg = "order_item_id"
+
+
+class Checkout(APIView):
+    serializer_class = CheckoutSerializer
+
+    def put(self, request, *args, **kwargs):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            valid_data = serializer.data
+            cart = Order.objects.get(buyer=self.request.user, is_paid=False)
+            address = Address.objects.get(id=valid_data["address"])
+            if cart.items.all().exists():
+                for item in cart.items.all():
+                    cart.total += item.product.price * item.quantity
+                cart.address = address
+                cart.is_paid = True
+                cart.save()
+                return Response({"total": cart.total}, status=HTTP_200_OK)
+            return Response("cart is empty", status=HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
