@@ -28,6 +28,8 @@ urlpatterns = [
     path('cart/add/', views.AddItem.as_view(), name="add-item"),
     path('checkout/', views.Checkout.as_view(), name="checkout"),
 
+    path('profile/', views.UserProfile.as_view(), name="profile"),
+
     path('login/', TokenObtainPairView.as_view(), name="login"),
     path('token/refresh/', TokenRefreshView.as_view(), name="token-refresh"),
     path('register/', views.Register.as_view(), name="register"),

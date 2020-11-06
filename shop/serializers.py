@@ -73,3 +73,21 @@ class CheckoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ["address"]
+
+
+class PreviousOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ["id", "datetime", "total", "is_paid", "address"]
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    previous_orders = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "first_name", "last_name", "email", "previous_orders"]
+
+    def get_previous_orders(self, obj):
+        orders = obj.orders.filter(is_paid=True)
+        return PreviousOrderSerializer(orders, many=True).data

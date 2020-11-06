@@ -7,7 +7,7 @@ from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from .models import Category, Product, Image, Order, OrderItem, Address
 from .serializers import (
     ProductsListSerializer, RegisterSerializer, CartSerializer,
-    CreateOrderItemSerializer, CheckoutSerializer, OrderItemSerializer
+    CreateOrderItemSerializer, CheckoutSerializer, OrderItemSerializer, UserProfileSerializer
 )
 
 
@@ -82,3 +82,10 @@ class Checkout(APIView):
                     return Response({"total": cart.total}, status=HTTP_200_OK)
             return Response({"msg": "cart is empty"}, status=HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class UserProfile(RetrieveAPIView):
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        return self.request.user
