@@ -72,7 +72,7 @@ class CreateOrderItemSerializer(serializers.ModelSerializer):
 class CountrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Country
-        fields = ["name"]
+        fields = ["id", "name"]
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -80,7 +80,7 @@ class AddressSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Address
-        fields = ["country", "city", "street", "phone"]
+        fields = ["id", "country", "city", "street", "phone"]
 
 
 class CheckoutSerializer(serializers.ModelSerializer):
@@ -100,11 +100,31 @@ class PreviousOrderSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     previous_orders = serializers.SerializerMethodField()
+    addresses = AddressSerializer(many=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "first_name", "last_name", "email", "previous_orders"]
+        fields = ["id", "username", "first_name", "last_name", "email", "previous_orders", "addresses"]
 
     def get_previous_orders(self, obj):
         orders = obj.orders.filter(is_paid=True)
         return PreviousOrderSerializer(orders, many=True).data
+
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(allow_null=False, allow_blank=False)
+    last_name = serializers.CharField(allow_null=False, allow_blank=False)
+    email = serializers.EmailField(allow_blank=False, allow_null=False)
+
+    class Meta:
+        model = User
+        fields = ["username", "email", "first_name", "last_name"]
+
+
+class CreateAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ["country", "city", "street", "phone"]
+
+    def to_representation(self, instance):
+        return AddressSerializer(instance).data

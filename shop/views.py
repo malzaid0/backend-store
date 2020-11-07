@@ -4,10 +4,11 @@ from rest_framework.views import APIView
 from django.db.models import Sum, F, FloatField
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
-from .models import Category, Product, Image, Order, OrderItem, Address
+from .models import Category, Product, Image, Order, OrderItem, Address, Country
 from .serializers import (
     ProductsListSerializer, RegisterSerializer, CartSerializer,
-    CreateOrderItemSerializer, CheckoutSerializer, OrderItemSerializer, UserProfileSerializer
+    CreateOrderItemSerializer, CheckoutSerializer, OrderItemSerializer, UserProfileSerializer,
+    UpdateUserSerializer, CountrySerializer, CreateAddressSerializer
 )
 
 
@@ -89,3 +90,22 @@ class UserProfile(RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UpdateUserInfo(RetrieveUpdateAPIView):
+    serializer_class = UpdateUserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class CountryList(ListAPIView):
+    queryset = Country.objects.all()
+    serializer_class = CountrySerializer
+
+
+class CreateAddress(CreateAPIView):
+    serializer_class = CreateAddressSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

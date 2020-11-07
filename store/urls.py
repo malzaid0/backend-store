@@ -21,6 +21,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("products/", views.ProductsList.as_view(), name="products"),
+    path("countries/", views.CountryList.as_view(), name="countries"),
+
+    path("addresses/create/", views.CreateAddress.as_view(), name="add-address"),
 
     path("order-items/<int:order_item_id>/", views.DeleteOrderItem.as_view(), name="del-order-item"),
 
@@ -29,6 +32,7 @@ urlpatterns = [
     path('checkout/', views.Checkout.as_view(), name="checkout"),
 
     path('profile/', views.UserProfile.as_view(), name="profile"),
+    path('profile/update/', views.UpdateUserInfo.as_view(), name="update-user"),
 
     path('login/', TokenObtainPairView.as_view(), name="login"),
     path('token/refresh/', TokenRefreshView.as_view(), name="token-refresh"),
