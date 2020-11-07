@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, Image, Order, OrderItem
+from .models import Category, Product, Image, Order, OrderItem, Country, Address
 from django.contrib.auth.models import User
 
 
@@ -69,6 +69,20 @@ class CreateOrderItemSerializer(serializers.ModelSerializer):
         fields = ["product", "quantity"]
 
 
+class CountrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = ["name"]
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    country = CountrySerializer()
+
+    class Meta:
+        model = Address
+        fields = ["country", "city", "street", "phone"]
+
+
 class CheckoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
@@ -76,9 +90,12 @@ class CheckoutSerializer(serializers.ModelSerializer):
 
 
 class PreviousOrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True)
+    address = AddressSerializer()
+
     class Meta:
         model = Order
-        fields = ["id", "datetime", "total", "is_paid", "address"]
+        fields = ["id", "datetime", "total", "is_paid", "address", "items"]
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
