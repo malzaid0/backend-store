@@ -100,7 +100,7 @@ class PreviousOrderSerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     previous_orders = serializers.SerializerMethodField()
-    addresses = AddressSerializer(many=True)
+    addresses = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -109,6 +109,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_previous_orders(self, obj):
         orders = obj.orders.filter(is_paid=True)
         return PreviousOrderSerializer(orders, many=True).data
+
+    def get_addresses(self, obj):
+        active_addresses = obj.addresses.filter(active=True)
+        return AddressSerializer(active_addresses, many=True).data
 
 
 class UpdateUserSerializer(serializers.ModelSerializer):

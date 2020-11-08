@@ -109,3 +109,17 @@ class CreateAddress(CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+# class UpdateDeleteAddress(APIView):
+#     serializer_class = CreateAddressSerializer
+#
+#     def put(self, request, *args, **kwargs):
+#         data = request.data
+#         serializer = self.serializer_class(data=data)
+#         if serializer.is_valid():
+#             valid_data = serializer.data
+#             address = Address.objects.get(id=self.request.data["id"])
+#             address.active = False
+#             address.save()
+#             new_address =
