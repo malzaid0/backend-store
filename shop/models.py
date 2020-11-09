@@ -57,6 +57,17 @@ class Order(models.Model):
     is_paid = models.BooleanField(default=False)
     address = models.ForeignKey(Address, on_delete=models.DO_NOTHING, related_name="deliveries", null=True, blank=True)
 
+    def clean(self):
+        if self.items.exists():
+            for item in self.items.all():
+                item.clean()
+    
+    def items_in_stock(self):
+        for item in self.items.all():
+            if item.quantity > item.product.inventory:
+                return False
+        return True
+
     def __str__(self):
         return f"{self.buyer.username} on {self.datetime} total: {self.total}"
 
@@ -70,7 +81,15 @@ class OrderItem(models.Model):
         if self.quantity > self.product.inventory:
             self.quantity = self.product.inventory
             self.save()
-        return self
+    
+    def update_quantity(self, created, quantity, increased):
+        if created:
+            self.quantity = quantity
+        elif increased:
+            self.quantity += quantity
+        else:
+            self.quantity -= quantity
+        self.save()
 
     def __str__(self):
         return f"{self.order.buyer.username} item: {self.product.name} qty: {self.quantity}"

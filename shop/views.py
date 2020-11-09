@@ -24,34 +24,30 @@ class UserCart(RetrieveAPIView):
     serializer_class = CartSerializer
 
     def get_object(self):
-        cart, created = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
-        if cart.items.exists():
-            for item in cart.items.all():
-                item.clean()
+        cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+        cart.clean()
         return cart
 
 
 class AddItem(APIView):
     serializer_class = CreateOrderItemSerializer
 
+    def get_object(self):
+        cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+        return cart
+
     def post(self, request, *args, **kwargs):
         data = request.data
         serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             valid_data = serializer.data
-            cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+            cart = self.get_object()
 
             order_item, created = OrderItem.objects.get_or_create(
                 product_id=valid_data["product"],
                 order=cart
             )
-
-            if created:
-                order_item.quantity = valid_data['quantity']
-            else:
-                order_item.quantity += valid_data['quantity']
-
-            order_item.save()
+            order_item.update_quantity(created, valid_data['quantity'], True)
 
             json_response = OrderItemSerializer(order_item).data
             return Response(json_response, status=HTTP_200_OK)
@@ -62,19 +58,13 @@ class AddItem(APIView):
         serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             valid_data = serializer.data
-            cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+            cart = self.get_object()
 
             order_item, created = OrderItem.objects.get_or_create(
                 product_id=valid_data["product"],
                 order=cart
             )
-
-            if created:
-                order_item.quantity = valid_data['quantity']
-            else:
-                order_item.quantity -= valid_data['quantity']
-
-            order_item.save()
+            order_item.update_quantity(created, valid_data['quantity'], False)
 
             json_response = OrderItemSerializer(order_item).data
             return Response(json_response, status=HTTP_200_OK)
@@ -88,35 +78,26 @@ class DeleteOrderItem(DestroyAPIView):
 
 
 class Checkout(APIView):
-    serializer_class = CheckoutSerializer
-
     def put(self, request, *args, **kwargs):
-        data = request.data
-        serializer = self.serializer_class(data=data)
-        if serializer.is_valid():
-            valid_data = serializer.data
+        try:
+            address = Address.objects.get(id=request.data['address'])
+        except:
+            return Response({"msg": "Address does not exist"}, status=HTTP_400_BAD_REQUEST)
+        else:
             cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
-            if cart:
-                address = Address.objects.get(id=valid_data["address"])
-                if cart.items.exists():
-                    for item in cart.items.all():
-                        if item.quantity > item.product.inventory:
-                            item.quantity = item.product.inventory
-                            item.save()
-                            return Response({
-                                                "msg": f" Sorry your order cannot be processed {item.product.name} has "
-                                                       f"only {item.product.inventory} in stock"},
-                                            status=HTTP_400_BAD_REQUEST)
-                        # Problem
-                    cart.total = \
-                        cart.items.aggregate(total=Sum(F("quantity") * F("product__price"), output_field=FloatField()))[
-                            "total"]
+            if cart.items.exists():
+                if cart.items_in_stock():
+                    cart.total = cart.items.aggregate(
+                        total=Sum(F("quantity") * F("product__price"),output_field=FloatField())
+                    )["total"]
                     cart.address = address
                     cart.is_paid = True
                     cart.save()
                     return Response({"total": cart.total}, status=HTTP_200_OK)
+                else:
+                    return Response({"msg": "Some items in your cart have exceeded the available inventory"},status=HTTP_400_BAD_REQUEST)
             return Response({"msg": "cart is empty"}, status=HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+        
 
 
 class UserProfile(RetrieveAPIView):
