@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 
 class Category(models.Model):
@@ -64,6 +65,12 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.DO_NOTHING, related_name="items")
     quantity = models.PositiveSmallIntegerField(default=1)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+
+    def clean(self):
+        if self.quantity > self.product.inventory:
+            self.quantity = self.product.inventory
+            self.save()
+        return self
 
     def __str__(self):
         return f"{self.order.buyer.username} item: {self.product.name} qty: {self.quantity}"

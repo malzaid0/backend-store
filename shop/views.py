@@ -1,10 +1,9 @@
-from django.contrib.auth.models import User
 from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView, RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from django.db.models import Sum, F, FloatField
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
-from .models import Category, Product, Image, Order, OrderItem, Address, Country
+from .models import Product, Order, OrderItem, Address, Country
 from .serializers import (
     ProductsListSerializer, RegisterSerializer, CartSerializer,
     CreateOrderItemSerializer, CheckoutSerializer, OrderItemSerializer, UserProfileSerializer,
@@ -26,6 +25,9 @@ class UserCart(RetrieveAPIView):
 
     def get_object(self):
         cart, created = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+        if cart.items.exists():
+            for item in cart.items.all():
+                item.clean()
         return cart
 
 
@@ -55,6 +57,29 @@ class AddItem(APIView):
             return Response(json_response, status=HTTP_200_OK)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+    def put(self, request, *args, **kwargs):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            valid_data = serializer.data
+            cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
+
+            order_item, created = OrderItem.objects.get_or_create(
+                product_id=valid_data["product"],
+                order=cart
+            )
+
+            if created:
+                order_item.quantity = valid_data['quantity']
+            else:
+                order_item.quantity -= valid_data['quantity']
+
+            order_item.save()
+
+            json_response = OrderItemSerializer(order_item).data
+            return Response(json_response, status=HTTP_200_OK)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
 
 class DeleteOrderItem(DestroyAPIView):
     queryset = OrderItem.objects.all()
@@ -70,10 +95,19 @@ class Checkout(APIView):
         serializer = self.serializer_class(data=data)
         if serializer.is_valid():
             valid_data = serializer.data
-            cart = Order.objects.filter(buyer=self.request.user, is_paid=False).first()
+            cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
             if cart:
                 address = Address.objects.get(id=valid_data["address"])
                 if cart.items.exists():
+                    for item in cart.items.all():
+                        if item.quantity > item.product.inventory:
+                            item.quantity = item.product.inventory
+                            item.save()
+                            return Response({
+                                                "msg": f" Sorry your order cannot be processed {item.product.name} has "
+                                                       f"only {item.product.inventory} in stock"},
+                                            status=HTTP_400_BAD_REQUEST)
+                        # Problem
                     cart.total = \
                         cart.items.aggregate(total=Sum(F("quantity") * F("product__price"), output_field=FloatField()))[
                             "total"]
@@ -111,15 +145,27 @@ class CreateAddress(CreateAPIView):
         serializer.save(user=self.request.user)
 
 
-# class UpdateDeleteAddress(APIView):
-#     serializer_class = CreateAddressSerializer
-#
-#     def put(self, request, *args, **kwargs):
-#         data = request.data
-#         serializer = self.serializer_class(data=data)
-#         if serializer.is_valid():
-#             valid_data = serializer.data
-#             address = Address.objects.get(id=self.request.data["id"])
-#             address.active = False
-#             address.save()
-#             new_address =
+class UpdateDeleteAddress(APIView):
+    serializer_class = CreateAddressSerializer
+
+    def put(self, request, *args, **kwargs):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            address = Address.objects.get(id=self.request.data["id"])
+            address.active = False
+            address.save()
+            new_address = serializer.save(user=self.request.user)
+            json_response = CreateAddressSerializer(new_address).data
+            return Response(json_response, status=HTTP_200_OK)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+    def post(self, request, *args, **kwargs):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            address = Address.objects.get(id=self.request.data["id"])
+            address.active = False
+            address.save()
+            return Response({"msg": "address has been deleted"}, status=HTTP_200_OK)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)

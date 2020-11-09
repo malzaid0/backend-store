@@ -24,6 +24,7 @@ urlpatterns = [
     path("countries/", views.CountryList.as_view(), name="countries"),
 
     path("addresses/create/", views.CreateAddress.as_view(), name="add-address"),
+    path("addresses/update/", views.UpdateDeleteAddress.as_view(), name="update-address"),
 
     path("order-items/<int:order_item_id>/", views.DeleteOrderItem.as_view(), name="del-order-item"),
 
