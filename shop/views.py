@@ -87,17 +87,20 @@ class Checkout(APIView):
             cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
             if cart.items.exists():
                 if cart.items_in_stock():
+                    for item in cart.items.all():
+                        item.product.inventory -= item.quantity
+                        item.product.save()
                     cart.total = cart.items.aggregate(
-                        total=Sum(F("quantity") * F("product__price"),output_field=FloatField())
+                        total=Sum(F("quantity") * F("product__price"), output_field=FloatField())
                     )["total"]
                     cart.address = address
                     cart.is_paid = True
                     cart.save()
                     return Response({"total": cart.total}, status=HTTP_200_OK)
                 else:
-                    return Response({"msg": "Some items in your cart have exceeded the available inventory"},status=HTTP_400_BAD_REQUEST)
+                    return Response({"msg": "Some items in your cart have exceeded the available inventory"},
+                                    status=HTTP_400_BAD_REQUEST)
             return Response({"msg": "cart is empty"}, status=HTTP_400_BAD_REQUEST)
-        
 
 
 class UserProfile(RetrieveAPIView):
