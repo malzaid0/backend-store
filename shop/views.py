@@ -1,12 +1,15 @@
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView, RetrieveUpdateAPIView
-from rest_framework.views import APIView
 from django.db.models import Sum, F, FloatField
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, DestroyAPIView, RetrieveUpdateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from rest_framework.views import APIView
+
 from .models import Product, Order, OrderItem, Address, Country
+from .permissions import IsCartOwner
 from .serializers import (
     ProductsListSerializer, RegisterSerializer, CartSerializer,
-    CreateOrderItemSerializer, CheckoutSerializer, OrderItemSerializer, UserProfileSerializer,
+    CreateOrderItemSerializer, OrderItemSerializer, UserProfileSerializer,
     UpdateUserSerializer, CountrySerializer, CreateAddressSerializer
 )
 
@@ -22,6 +25,7 @@ class Register(CreateAPIView):
 
 class UserCart(RetrieveAPIView):
     serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
@@ -31,6 +35,7 @@ class UserCart(RetrieveAPIView):
 
 class AddItem(APIView):
     serializer_class = CreateOrderItemSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         cart, _ = Order.objects.get_or_create(buyer=self.request.user, is_paid=False)
@@ -75,9 +80,12 @@ class DeleteOrderItem(DestroyAPIView):
     queryset = OrderItem.objects.all()
     lookup_field = "id"
     lookup_url_kwarg = "order_item_id"
+    permission_classes = [IsAuthenticated, IsCartOwner]
 
 
 class Checkout(APIView):
+    permission_classes = [IsAuthenticated]
+
     def put(self, request, *args, **kwargs):
         try:
             address = Address.objects.get(id=request.data['address'])
@@ -105,6 +113,7 @@ class Checkout(APIView):
 
 class UserProfile(RetrieveAPIView):
     serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
@@ -112,6 +121,7 @@ class UserProfile(RetrieveAPIView):
 
 class UpdateUserInfo(RetrieveUpdateAPIView):
     serializer_class = UpdateUserSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
@@ -124,6 +134,7 @@ class CountryList(ListAPIView):
 
 class CreateAddress(CreateAPIView):
     serializer_class = CreateAddressSerializer
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -131,6 +142,7 @@ class CreateAddress(CreateAPIView):
 
 class UpdateDeleteAddress(APIView):
     serializer_class = CreateAddressSerializer
+    permission_classes = [IsAuthenticated]
 
     def put(self, request, *args, **kwargs):
         data = request.data
@@ -144,6 +156,7 @@ class UpdateDeleteAddress(APIView):
             return Response(json_response, status=HTTP_200_OK)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+    # This's actually delete
     def post(self, request, *args, **kwargs):
         data = request.data
         serializer = self.serializer_class(data=data)
